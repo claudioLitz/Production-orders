@@ -31,6 +31,7 @@ def status():
  cursor.execute('SELECT COUNT(*) as total FROM ordens')
  resultado = cursor.fetchone()
  conn.close()
+ 
  return jsonify({
  "status": "online",
  "sistema": "Sistema de Ordens de Producao",
@@ -56,6 +57,28 @@ def listar_ordens():
  # Convert each Row of SQLite in python dictionary to 
  # Converte cada Row do SQLite em dicionário Python para serialize in JSON
  return jsonify([dict(o) for o in ordens])
+
+# ── ROTA DE TESTE: Inserir dado falso (GET) ───────────────────
+@app.route('/gerar-teste')
+def gerar_teste():
+    """
+    Rota temporária apenas para testar a inserção no banco de dados.
+    """
+    # 1. Abre a conexão com o banco
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 2. Executa o comando SQL para inserir um dado fixo
+    cursor.execute('''
+        INSERT INTO ordens (produto, quantidade, status) 
+        VALUES ('Motor WEG W22 - Teste', 15, 'Em Produção')
+    ''')
+    
+    # 3. Salva (commit) e fecha a conexão
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"mensagem": "Ordem de teste criada com sucesso! Vá para /ordens para ver."})
 
 
 @app.route('/fabrica/<nome_fabrica>')
