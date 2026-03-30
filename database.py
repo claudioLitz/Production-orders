@@ -27,6 +27,7 @@ def init_db():
     conn = get_connection()
     # cursor() permite executar comandos SQL
     cursor = conn.cursor()
+    
     # IF NOT EXISTS garante que o comando não falha se a tabela já existir
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS ordens (
