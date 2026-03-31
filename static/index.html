@@ -1,75 +1,52 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Produção | SENAI</title>
+    <title>Painel de Manufatura</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
-    <div class="dashboard-container">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2><span class="material-icons">precision_manufacturing</span> AutoSys</h2>
+    <header class="navbar">
+        <div class="logo">
+            <span class="material-icons">factory</span>
+            <span>Painel de Manufatura</span>
+        </div>
+        <div class="server-status">
+            <span id="status-indicator" class="indicator offline"></span>
+            <span id="status-text">A ligar...</span>
+            <small id="server-time"></small>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="panel form-panel">
+            <h2><span class="material-icons">add_circle_outline</span> Nova Ordem de Produção</h2>
+            <form id="form-ordem">
+                <div class="input-group">
+                    <label for="produto">Nome do Produto</label>
+                    <input type="text" id="produto" placeholder="Ex: Motor Elétrico 5CV" required>
+                </div>
+                <div class="input-group">
+                    <label for="quantidade">Quantidade (un.)</label>
+                    <input type="number" id="quantidade" min="1" placeholder="Ex: 50" required>
+                </div>
+                <button type="submit" class="btn-submit">Criar Ordem</button>
+            </form>
+        </section>
+
+        <section class="panel list-panel">
+            <div class="panel-header">
+                <h2><span class="material-icons">view_list</span> Ordens Registadas</h2>
+                <div class="total-badge">Total: <span id="total-ordens">0</span></div>
             </div>
-            <nav class="sidebar-nav">
-                <a href="#" class="active"><span class="material-icons">dashboard</span> Dashboard</a>
-                <a href="#"><span class="material-icons">list_alt</span> Ordens (OP)</a>
-                <a href="#"><span class="material-icons">analytics</span> Relatórios</a>
-                <a href="#"><span class="material-icons">settings</span> Configurações</a>
-            </nav>
-        </aside>
+            
+            <div class="grid-ordens" id="grid-ordens">
+                </div>
+        </section>
+    </main>
 
-        <main class="main-content">
-            <header class="top-header">
-                <h1>Visão Geral da Produção</h1>
-                <div class="system-status">
-                    <span class="status-dot" id="connection-dot"></span>
-                    <span id="connection-text">Verificando...</span>
-                </div>
-            </header>
-
-            <section class="summary-cards">
-                <div class="card">
-                    <div class="card-info">
-                        <h3>Total de Ordens</h3>
-                        <p id="total-ordens">0</p>
-                    </div>
-                    <span class="material-icons card-icon">assignment</span>
-                </div>
-                <div class="card">
-                    <div class="card-info">
-                        <h3>Servidor</h3>
-                        <p id="server-time">--:--:--</p>
-                    </div>
-                    <span class="material-icons card-icon">dns</span>
-                </div>
-            </section>
-
-            <section class="data-section">
-                <div class="section-header">
-                    <h2>Ordens Recentes</h2>
-                    <button class="btn-primary"><span class="material-icons">add</span> Nova Ordem</button>
-                </div>
-                <div class="table-container">
-                    <table id="ordens-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Produto</th>
-                                <th>Qtd.</th>
-                                <th>Status</th>
-                                <th>Criado Em</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ordens-body">
-                            </tbody>
-                    </table>
-                </div>
-            </section>
-        </main>
-    </div>
     <script src="script.js"></script>
 </body>
 </html>
