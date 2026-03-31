@@ -90,10 +90,13 @@ def buscar_ordem(ordem_id):
 def criar_ordem():
     """
     Cria uma nova ordem de producao a partir dos dados JSON enviados.
+    
     Body esperado (JSON):
-    produto (str): Nome do produto. Obrigatorio.
-    quantidade (int): Quantidade de pecas. Obrigatorio, > 0.
-    status (str): Opcional. Padrao: 'Pendente'.
+    
+        produto (str):      Nome do produto. Obrigatorio.
+        quantidade (int):   Quantidade de pecas. Obrigatorio, > 0.
+        status (str):       Opcional. Padrao: 'Pendente'.
+    
     Retorna:
     201 + JSON da ordem criada, em caso de sucesso.
     400 + mensagem de erro, se dados invalidos.
