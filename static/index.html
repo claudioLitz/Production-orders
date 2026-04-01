@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Production orders system</title>
+  <title>Production Orders System</title>
   
   <style>
     /* ── Reset and base ─────────────────────────────────── */
@@ -144,7 +144,7 @@
       transform: scale(0.97);
     }
 
-    #btn-cadastrar {
+    #btn-register {
       background: #00897B;
       color: white;
     }
@@ -183,12 +183,12 @@
       border-left: 4px solid #C62828;
     }
 
-    .hidden, .oculto {
+    .hidden {
       display: none;
     }
 
     /* ── Table ─────────────────────────────────────────── */
-    .listagem-header {
+    .list-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -246,7 +246,7 @@
       color: #2E7D32;
     }
 
-    /* ── Select de status na tabela ────────────────────── */
+    /* ── Select status in table ────────────────────── */
     .select-status {
       padding: 3px 6px;
       border: 1px solid #CFD8DC;
@@ -274,30 +274,30 @@
 
   <header>
     <div class="header-content">
-      <h1>Production orders system</h1>
-      <span id="status-badge">Verificando...</span>
+      <h1>Production Orders System</h1>
+      <span id="status-badge">Checking...</span>
     </div>
   </header>
 
   <main>
     
-    <section class="card" id="register_section">
+    <section class="card" id="register-section">
       <h2>New order</h2>
       
       <div class="form-grid">
         <div class="form-group">
-          <label for="Product">Product</label>
+          <label for="product">Product</label>
           <input type="text" id="product" placeholder="Ex: WEG W22">
         </div>
         
         <div class="form-group">
-          <label for="quantity">quantity</label>
+          <label for="quantity">Quantity</label>
           <input type="number" id="quantity" placeholder="Ex: 100" min="1">
         </div>
         
         <div class="form-group">
-          <label for="status-novo">Initial stats</label>
-          <select id="status-novo">
+          <label for="new-status">Initial status</label>
+          <select id="new-status">
             <option value="Pending">Pending</option>
             <option value="In working">In working</option>
             <option value="Done">Done</option>
@@ -305,7 +305,7 @@
         </div>
       </div>
       
-      <button id="btn-cadastrar" onclick="criarOrdem()">
+      <button id="btn-register" onclick="createOrder()">
         Register order
       </button>
       
@@ -313,29 +313,29 @@
     </section>
 
     <section class="card" id="list-section">
-      <div class="listagem-header">
+      <div class="list-header">
         <h2>Registered orders</h2>
-        <button onclick="carregarOrdens()" class="btn-update">
+        <button onclick="loadOrders()" class="btn-update">
           Update list
         </button>
       </div>
       
-      <div id="loading" class="oculto">Loading...</div>
+      <div id="loading" class="hidden">Loading...</div>
       
       <div class="container-table">
-        <table id="orders-tabela">
+        <table id="orders-table">
           <thead>
             <tr>
               <th>ID</th>
-              <th>Produto</th>
-              <th>Qtd</th>
+              <th>Product</th>
+              <th>Qty</th>
               <th>Status</th>
-              <th>Criado em</th>
-              <th>Acoes</th>
+              <th>Created at</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="table-body">
-            </tbody>
+          </tbody>
         </table>
       </div>
       
@@ -345,88 +345,89 @@
   </main>
 
   <script>
-    // URL base da API Flask
-    // Em produção, trocamos por: 'https://meuservidor.com.br'
+    // Flask API Base URL
+    // In production, change to: 'https://myserver.com'
     const API_URL = 'http://localhost:5000';
     // ────────────────────────────────────────────────────────
 
-    async function verificarStatus() {
+    async function checkStatus() {
       const badge = document.getElementById('status-badge');
       try {
-        const resp = await fetch(`${API_URL}/status`);
-        const dados = await resp.json();
-        badge.textContent = `API Online | ${dados.total_ordens} orders`;
+        const response = await fetch(`${API_URL}/status`);
+        const data = await response.json();
+        badge.textContent = `API Online | ${data.total_ordens} orders`;
         badge.className = 'online';
-      } catch (erro) {
+      } catch (error) {
         badge.textContent = 'API Offline';
         badge.className = 'offline';
       }
     }
 
-    async function carregarOrdens() {
+    async function loadOrders() {
       const loading = document.getElementById('loading');
-      const semDados = document.getElementById('without-data');
-      const tabela = document.getElementById('orders-tabela');
-      const corpo = document.getElementById('table-body');
+      const noData = document.getElementById('without-data');
+      const table = document.getElementById('orders-table');
+      const tbody = document.getElementById('table-body');
 
-      // Exibe indicador de carregamento e esconde a tabela
+      // Show loading indicator and hide table
       loading.classList.remove('hidden');
-      tabela.classList.add('hidden');
-      semDados.classList.add('hidden');
+      table.classList.add('hidden');
+      noData.classList.add('hidden');
 
       try {
-        // Faz a requisicao GET /ordens
-        const resposta = await fetch(`${API_URL}/ordens`);
-        // Converte a resposta (texto JSON) em array JavaScript
-        const ordens = await resposta.json();
+        // Makes the GET request to /ordens
+        const response = await fetch(`${API_URL}/ordens`);
+        // Converts the response (JSON text) to a JavaScript array
+        const orders = await response.json();
 
-        // Esconde o loading
+        // Hide loading
         loading.classList.add('hidden');
 
-        // Se nao ha ordens, mostra mensagem e sai da funcao
-        if (ordens.length === 0) {
-          semDados.classList.remove('hidden');
+        // If there are no orders, show message and exit function
+        if (orders.length === 0) {
+          noData.classList.remove('hidden');
           return;
         }
 
-        // Para cada ordem, cria uma linha <tr> na tabela
-        corpo.innerHTML = ordens.map(ordem => `
-          <tr id="linha-${ordem.id}">
-            <td>${ordem.id}</td>
-            <td>${ordem.produto}</td>
-            <td>${ordem.quantidade}</td>
-            <td>${renderizarBadge(ordem.status)}</td>
-            <td>${ordem.criado_em}</td>
+        // For each order, create a <tr> row in the table
+        // Note: Kept properties like 'produto', 'quantidade' to match your Python API JSON response
+        tbody.innerHTML = orders.map(order => `
+          <tr id="row-${order.id}">
+            <td>${order.id}</td>
+            <td>${order.produto}</td>
+            <td>${order.quantidade}</td>
+            <td>${renderBadge(order.status)}</td>
+            <td>${order.criado_em}</td>
             <td>
-              <select class="select-status" onchange="atualizarStatus(${ordem.id}, this.value)">
-                <option value="Pending" ${ordem.status === 'Pending' ? 'selected' : ''}>
+              <select class="select-status" onchange="updateStatus(${order.id}, this.value)">
+                <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>
                   Pending
                 </option>
-                <option value="In working" ${ordem.status === 'In working' ? 'selected' : ''}>
+                <option value="In working" ${order.status === 'In working' ? 'selected' : ''}>
                   In working
                 </option>
-                <option value="Done" ${ordem.status === 'Done' ? 'selected' : ''}>
+                <option value="Done" ${order.status === 'Done' ? 'selected' : ''}>
                   Done
                 </option>
               </select>
-              <button class="btn-delete" onclick="excluirOrdem(${ordem.id})">
+              <button class="btn-delete" onclick="deleteOrder(${order.id})">
                 Delete
               </button>
             </td>
           </tr>
         `).join('');
 
-        // Exibe a tabela preenchida
-        tabela.classList.remove('hidden');
-      } catch (erro) {
+        // Display the filled table
+        table.classList.remove('hidden');
+      } catch (error) {
         loading.classList.add('hidden');
-        console.error('Erro ao carregar ordens:', erro);
-        exibirMensagem('Error connecting to API. Is the server running?', 'error');
+        console.error('Error loading orders:', error);
+        showMessage('Error connecting to API. Is the server running?', 'error');
       }
     }
 
-    // Retorna o HTML do badge colorido conforme o status
-    function renderizarBadge(status) {
+    // Returns the HTML for the colored badge based on status
+    function renderBadge(status) {
       const classes = {
         'Pending': 'badge badge-pending',
         'In working': 'badge badge-working',
@@ -435,6 +436,151 @@
       const cls = classes[status] || 'badge';
       return `<span class="${cls}">${status}</span>`;
     }
+
+    async function createOrder() {
+      // Capture HTML field values
+      const product = document.getElementById('product').value.trim();
+      const quantity = document.getElementById('quantity').value;
+      const status = document.getElementById('new-status').value;
+      
+      // Front-end validation (before calling the API)
+      if (!product) {
+        showMessage('Please enter the product name.', 'error');
+        document.getElementById('product').focus();
+        return;
+      }
+      if (!quantity || Number(quantity) <= 0) {
+        showMessage('Please enter a valid quantity (positive number).', 'error');
+        document.getElementById('quantity').focus();
+        return;
+      }
+
+      // Disable the button to prevent double-clicking
+      const btn = document.getElementById('btn-register');
+      btn.disabled = true;
+      btn.textContent = 'Registering...';
+
+      try {
+        const response = await fetch(`${API_URL}/ordens`, {
+          method: 'POST',
+          // Content-Type tells Flask the body is JSON
+          headers: { 'Content-Type': 'application/json' },
+          // JSON.stringify converts JS object to JSON string
+          body: JSON.stringify({
+            produto: product,
+            quantidade: Number(quantity),
+            status: status
+          })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) { // response.ok = true for status 200-299
+          showMessage(`Order #${data.id} registered successfully!`, 'success');
+          clearForm();
+          await loadOrders(); // Update table
+          await checkStatus(); // Update header counter
+        } else {
+          // Display the error message returned by Flask
+          showMessage(data.erro || 'Error registering order.', 'error');
+        }
+      } catch (error) {
+        showMessage('API connection error.', 'error');
+        console.error(error);
+      } finally {
+        // The finally block ALWAYS executes, with or without errors
+        btn.disabled = false;
+        btn.textContent = 'Register order';
+      }
+    }
+
+    // Clears form fields after successful registration
+    function clearForm() {
+      document.getElementById('product').value = '';
+      document.getElementById('quantity').value = '';
+      document.getElementById('new-status').value = 'Pending';
+    }
+
+    async function updateStatus(id, newStatus) {
+      try {
+        const response = await fetch(`${API_URL}/ordens/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          showMessage(`Status of Order #${id} updated to '${newStatus}'.`, 'success');
+          // Update only the badge in the row, without reloading everything
+          const row = document.getElementById(`row-${id}`);
+          if (row) {
+            const tdStatus = row.cells[3];
+            tdStatus.innerHTML = renderBadge(newStatus);
+          }
+          await checkStatus();
+        } else {
+          showMessage(data.erro || 'Error updating status.', 'error');
+          // Reload the table to restore the select to the correct value
+          await loadOrders();
+        }
+      } catch (error) {
+        showMessage('Connection error.', 'error');
+        console.error(error);
+      }
+    }
+
+    async function deleteOrder(id) {
+      // User confirmation before deleting
+      const confirmed = window.confirm(`Are you sure you want to delete Order #${id}? This action is permanent.`);
+      if (!confirmed) return; // User clicked Cancel
+      
+      try {
+        const response = await fetch(`${API_URL}/ordens/${id}`, {
+          method: 'DELETE'
+          // DELETE has no body
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          showMessage(data.mensagem || 'Order deleted successfully.', 'success');
+          // Remove the table row without reloading everything
+          const row = document.getElementById(`row-${id}`);
+          if (row) row.remove();
+          
+          // If there are no more rows, show 'No order registered'
+          const tbody = document.getElementById('table-body');
+          if (tbody.children.length === 0) {
+            document.getElementById('orders-table').classList.add('hidden');
+            document.getElementById('without-data').classList.remove('hidden');
+          }
+          await checkStatus();
+        } else {
+          showMessage(data.erro || 'Error deleting order.', 'error');
+        }
+      } catch (error) {
+        showMessage('Connection error.', 'error');
+        console.error(error);
+      }
+    }
+
+    function showMessage(text, type) {
+      const div = document.getElementById('message');
+      div.textContent = text;
+      div.className = `message ${type}`; // 'message success' or 'message error'
+      div.classList.remove('hidden');
+      
+      // Automatically hides after 4 seconds
+      setTimeout(() => div.classList.add('hidden'), 4000);
+    }
+
+    // Executes when the page loads
+    window.onload = async function() {
+      await checkStatus();
+      await loadOrders();
+    };
   </script>
 
 </body>

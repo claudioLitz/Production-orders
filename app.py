@@ -9,246 +9,256 @@ from flask_cors import CORS
 from database import init_db, get_connection
 
 # Create an instance of Flask application
-# __name__ tell to Flask where to search resourses (templates, static, etc.)
+# __name__ tells Flask where to search resources (templates, static, etc.)
 app = Flask(__name__, static_folder='static', static_url_path='')
 
-# enable CORS – let the front-end make requests to API without blocks of browser
+# Enable CORS – allows the front-end to make requests to the API without browser blocks
 CORS(app)
 
 # ── ROUTE 1: Main page ──────────────────────────────────
 @app.route('/')
 def index():
-    """Serve o arquivo index.html da pasta static."""
+    """Serves the index.html file from the static folder."""
     return app.send_static_file('index.html')
 
 
 # ── ROUTE 2: API stats ──────────────────────────────────
 @app.route('/status')
 def status():
-    """Rota de health check com informacoes detalhadas."""
-    # Conta quantas ordens existem no banco
+    """Health check route with detailed information."""
+    # Counts how many orders exist in the database
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('SELECT COUNT(*) as total FROM ordens')
-    resultado = cursor.fetchone()
+    result = cursor.fetchone()
     conn.close()
     
     return jsonify({
         "status": "online",
-        "sistema": "Sistema de Ordens de Producao",
+        "sistema": "Production Orders System",
         "versao": "1.0.0",
-        "total_ordens": resultado["total"],
+        "total_ordens": result["total"],
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     })
 
 
-# ── ROUTE 3: List all the orders (GET) ───────────────────
+# ── ROUTE 3: List all orders (GET) ───────────────────
 @app.route('/ordens', methods=['GET'])
-def listar_ordens():
-    # request.args acessa os parametros da query string
-    # Ex: /ordens?status=Pendente → status_filtro = 'Pendente'
-    status_filtro = request.args.get('status')
+def list_orders():
+    # request.args accesses query string parameters
+    # Ex: /ordens?status=Pending → status_filter = 'Pending'
+    status_filter = request.args.get('status')
     conn = get_connection()
     cursor = conn.cursor()
-    if status_filtro:
-        cursor.execute('SELECT * FROM ordens WHERE status = ? ORDER BY id DESC', (status_filtro,) )
+    
+    if status_filter:
+        cursor.execute('SELECT * FROM ordens WHERE status = ? ORDER BY id DESC', (status_filter,) )
     else:
         cursor.execute('SELECT * FROM ordens ORDER BY id DESC')
-    ordens = cursor.fetchall()
+        
+    orders = cursor.fetchall()
     conn.close()
-    return jsonify([dict(o) for o in ordens])
+    
+    return jsonify([dict(o) for o in orders])
 
 
-# ── ROUTE 4: Buscar uma ordem específica pelo ID (GET) ───
-@app.route('/ordens/<int:ordem_id>', methods=['GET'])
-def buscar_ordem(ordem_id):
+# ── ROUTE 4: Fetch a specific order by ID (GET) ───
+@app.route('/ordens/<int:order_id>', methods=['GET'])
+def get_order(order_id):
     """
-    Busca uma unica ordem de producao pelo seu ID.
-    Parametros de URL:
-    ordem_id (int): ID da ordem a ser buscada.
-    Retorna:
-    200 + JSON da ordem, se encontrada.
-    404 + mensagem de erro, se nao existir.
+    Fetches a single production order by its ID.
+    URL Parameters:
+    order_id (int): ID of the order to be fetched.
+    Returns:
+    200 + Order JSON, if found.
+    404 + error message, if it does not exist.
     """
     conn = get_connection()
     cursor = conn.cursor()
     
-    # O '?' e substituido pelo valor de ordem_id de forma segura
-    cursor.execute('SELECT * FROM ordens WHERE id = ?', (ordem_id,))
-    ordem = cursor.fetchone() # fetchone() retorna um unico registro ou None
+    # The '?' is safely replaced by the order_id value
+    cursor.execute('SELECT * FROM ordens WHERE id = ?', (order_id,))
+    order = cursor.fetchone() # fetchone() returns a single record or None
     conn.close()
     
-    # Se o ID nao existir, retornamos 404
-    if ordem is None:
-        return jsonify({'erro': f'Ordem {ordem_id} nao encontrada.'}), 404
+    # If the ID does not exist, return 404
+    if order is None:
+        return jsonify({'erro': f'Order {order_id} not found.'}), 404
 
-    return jsonify(dict(ordem)), 200
+    return jsonify(dict(order)), 200
 
 
-# ── ROUTE 5: Criar nova ordem de producao (POST) ─────────
+# ── ROUTE 5: Create new production order (POST) ─────────
 @app.route('/ordens', methods=['POST'])
-def criar_ordem():
+def create_order():
     """
-    Cria uma nova ordem de producao a partir dos dados JSON enviados.
+    Creates a new production order from the sent JSON data.
     
-    Body esperado (JSON):
+    Expected Body (JSON):
+        produto (str):      Product name. Required.
+        quantidade (int):   Quantity of parts. Required, > 0.
+        status (str):       Optional. Default: 'Pending'.
     
-        produto (str):      Nome do produto. Obrigatorio.
-        quantidade (int):   Quantidade de pecas. Obrigatorio, > 0.
-        status (str):       Opcional. Padrao: 'Pendente'.
-    
-    Retorna:
-    201 + JSON da ordem criada, em caso de sucesso.
-    400 + mensagem de erro, se dados invalidos.
+    Returns:
+    201 + Created order JSON, on success.
+    400 + error message, if invalid data.
     """
-    dados = request.get_json()
+    data = request.get_json()
     
-    # ── Validacoes de entrada ───────────────────────────────
-    # Verifica se o body foi enviado e é um JSON valido
-    if not dados:
-        return jsonify({'erro': 'Body da requisicao ausente ou invalido.'}), 400
+    # ── Input validations ───────────────────────────────
+    # Check if the body was sent and is a valid JSON
+    if not data:
+        return jsonify({'erro': 'Missing or invalid request body.'}), 400
     
-    # Verifica campo obrigatorio 'produto'
-    produto = dados.get('produto', '').strip()
-    if not produto:
-        return jsonify({'erro': 'Campo "produto" e obrigatorio e nao pode ser vazio.'}), 400
+    # Check required field 'produto'
+    product_val = data.get('produto', '').strip()
+    if not product_val:
+        return jsonify({'erro': 'Field "produto" is required and cannot be empty.'}), 400
     
-    # Verifica campo obrigatorio 'quantidade'
-    quantidade = dados.get('quantidade')
-    if quantidade is None:
-        return jsonify({'erro': 'Campo "quantidade" e obrigatorio.'}), 400
+    # Check required field 'quantidade'
+    quantity_val = data.get('quantidade')
+    if quantity_val is None:
+        return jsonify({'erro': 'Field "quantidade" is required.'}), 400
     
-    # Verifica se quantidade e um numero inteiro positivo
+    # Check if quantity is a positive integer
     try:
-        quantidade = int(quantidade)
-        if quantidade <= 0:
+        quantity_val = int(quantity_val)
+        if quantity_val <= 0:
             raise ValueError()
     except (ValueError, TypeError):
-        return jsonify({'erro': 'Campo "quantidade" deve ser um numero inteiro positivo.'}), 400
+        return jsonify({'erro': 'Field "quantidade" must be a positive integer.'}), 400
     
-    # Status e opcional; usa 'Pendente' se nao informado
-    status_validos = ['Pendente', 'Em andamento', 'Concluida']
-    status = dados.get('status', 'Pendente')
-    if status not in status_validos:
-        return jsonify({'erro': f'Status invalido. Use: {status_validos}'}), 400
+    # Status is optional; uses 'Pending' if not provided
+    valid_statuses = ['Pending', 'In working', 'Done']
+    status_val = data.get('status', 'Pending')
+    
+    if status_val not in valid_statuses:
+        return jsonify({'erro': f'Invalid status. Use: {valid_statuses}'}), 400
 
-    # ── Insercao no banco ───────────────────────────────────
+    # ── Database insertion ───────────────────────────────────
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
         'INSERT INTO ordens (produto, quantidade, status) VALUES (?, ?, ?)',
-        (produto, quantidade, status)
+        (product_val, quantity_val, status_val)
     )
     conn.commit()
     
-    # Recuperamos o ID gerado automaticamente pelo banco
-    novo_id = cursor.lastrowid
+    # Retrieve the automatically generated ID from the database
+    new_id = cursor.lastrowid
     conn.close()
     
-    # Buscamos o registro recem-criado para retornar completo
+    # Fetch the newly created record to return it completely
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM ordens WHERE id = ?', (novo_id,))
-    nova_ordem = cursor.fetchone()
+    cursor.execute('SELECT * FROM ordens WHERE id = ?', (new_id,))
+    new_order = cursor.fetchone()
     conn.close()
 
-    # Retorna 201 Created com o registro completo
-    return jsonify(dict(nova_ordem)), 201
+    # Returns 201 Created with the full record
+    return jsonify(dict(new_order)), 201
 
-# ── ROTA: Atualizar status de uma ordem (PUT) ───────────────
-@app.route('/ordens/<int:ordem_id>', methods=['PUT'])
-def atualizar_ordem(ordem_id):
-    """
-    Atualiza o status de uma ordem de producao existente.
-    Parametros de URL:
-    ordem_id (int): ID da ordem a atualizar.
-    Body esperado (JSON):
-    status (str): Novo status. Valores aceitos:
-    'Pendente', 'Em andamento', 'Concluida'.
-    Retorna:
-    200 + JSON da ordem atualizada.
-    400 + erro se status invalido.
-    404 + erro se ordem nao encontrada.
-    """
- 
-    dados = request.get_json()
-    if not dados:
-        return jsonify({'erro': 'Body da requisicao ausente ou invalido.'}), 400
-    
-    # Valida o campo status
-    status_validos = ['Pendente', 'Em andamento', 'Concluida']
-    novo_status = dados.get('status', '').strip()
-    
-    if not novo_status:
-        return jsonify({'erro': 'Campo "status" e obrigatorio.'}), 400
 
-    if novo_status not in status_validos:
-        return jsonify({ 'erro': f'Status invalido. Valores permitidos: {status_validos}' }), 400
+# ── ROUTE 6: Update status of an order (PUT) ───────────────
+@app.route('/ordens/<int:order_id>', methods=['PUT'])
+def update_order(order_id):
+    """
+    Updates the status of an existing production order.
+    URL Parameters:
+    order_id (int): ID of the order to update.
+    Expected Body (JSON):
+    status (str): New status. Accepted values:
+    'Pending', 'In working', 'Done'.
+    Returns:
+    200 + Updated order JSON.
+    400 + error if invalid status.
+    404 + error if order not found.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({'erro': 'Missing or invalid request body.'}), 400
+    
+    # Validate the status field
+    valid_statuses = ['Pending', 'In working', 'Done']
+    new_status = data.get('status', '').strip()
+    
+    if not new_status:
+        return jsonify({'erro': 'Field "status" is required.'}), 400
+
+    if new_status not in valid_statuses:
+        return jsonify({ 'erro': f'Invalid status. Allowed values: {valid_statuses}' }), 400
     
     conn = get_connection()
     cursor = conn.cursor()
     
-    # Verifica se a ordem existe antes de tentar atualizar
-    cursor.execute('SELECT id FROM ordens WHERE id = ?', (ordem_id,))
+    # Check if the order exists before trying to update
+    cursor.execute('SELECT id FROM ordens WHERE id = ?', (order_id,))
     if cursor.fetchone() is None:
         conn.close()
-        return jsonify({'erro': f'Ordem {ordem_id} nao encontrada.'}), 404
+        return jsonify({'erro': f'Order {order_id} not found.'}), 404
     
-    # Executa a atualizacao
-    cursor.execute( 'UPDATE ordens SET status = ? WHERE id = ?', (novo_status, ordem_id))
+    # Execute the update
+    cursor.execute('UPDATE ordens SET status = ? WHERE id = ?', (new_status, order_id))
     conn.commit()
     conn.close()
     
-    # Retorna o registro atualizado
+    # Return the updated record
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM ordens WHERE id = ?', (ordem_id,))
-    ordem_atualizada = cursor.fetchone()
+    cursor.execute('SELECT * FROM ordens WHERE id = ?', (order_id,))
+    updated_order = cursor.fetchone()
     conn.close()
-    return jsonify(dict(ordem_atualizada)), 200
+    
+    return jsonify(dict(updated_order)), 200
 
-# ── ROTA: Remover uma ordem (DELETE) ───────────────────────
-@app.route('/ordens/<int:ordem_id>', methods=['DELETE'])
-def remover_ordem(ordem_id):
+
+# ── ROUTE 7: Remove an order (DELETE) ───────────────────────
+@app.route('/ordens/<int:order_id>', methods=['DELETE'])
+def delete_order(order_id):
     """
-    Remove permanentemente uma ordem de producao pelo ID.
-    Parametros de URL:
-    ordem_id (int): ID da ordem a ser removida.
-    Retorna:
-    200 + mensagem de confirmacao.
-    404 + erro se a ordem nao for encontrada.
+    Permanently removes a production order by ID.
+    URL Parameters:
+    order_id (int): ID of the order to be removed.
+    Returns:
+    200 + confirmation message.
+    404 + error if order is not found.
     """
     conn = get_connection()
     cursor = conn.cursor()
     
-    # Verifica existencia ANTES de deletar
-    cursor.execute('SELECT id, produto FROM ordens WHERE id = ?', (ordem_id,))
-    ordem = cursor.fetchone()
-    if ordem is None:
+    # Verify existence BEFORE deleting
+    cursor.execute('SELECT id, produto FROM ordens WHERE id = ?', (order_id,))
+    order = cursor.fetchone()
+    
+    if order is None:
         conn.close()
-        return jsonify({'erro': f'Ordem {ordem_id} nao encontrada.'}), 404
+        return jsonify({'erro': f'Order {order_id} not found.'}), 404
     
-    # Guarda o nome do produto para usar na mensagem de confirmacao
-    nome_produto = ordem['produto']
+    # Save the product name to use in the confirmation message
+    product_name = order['produto']
     
-    # Executa a remocao
-    cursor.execute('DELETE FROM ordens WHERE id = ?', (ordem_id,))
+    # Execute removal
+    cursor.execute('DELETE FROM ordens WHERE id = ?', (order_id,))
     conn.commit()
     conn.close()
-    return jsonify({ 'mensagem': f'Ordem {ordem_id} ({nome_produto}) removida com sucesso.', 'id_removido': ordem_id }), 200
+    
+    return jsonify({ 
+        'mensagem': f'Order {order_id} ({product_name}) removed successfully.', 
+        'id_removido': order_id 
+    }), 200
 
 
-# ── ROUTE 6: Rota com parametro dinamico ─────────────────
-@app.route('/fabrica/<nome_fabrica>')
-def boas_vindas(nome_fabrica):
+# ── ROUTE 8: Route with dynamic parameter ─────────────────
+@app.route('/fabrica/<factory_name>')
+def welcome_factory(factory_name):
     """
-    Rota com parametro dinamico.
-    O <nome_fabrica> na URL vira um argumento da funcao.
-    Exemplo: GET /fabrica/WEG retorna mensagem personalizada.
+    Route with a dynamic parameter.
+    The <factory_name> in the URL becomes a function argument.
+    Example: GET /fabrica/WEG returns a customized message.
     """
     return jsonify({
-        "mensagem": f"Bem-vindo, {nome_fabrica}! Sistema de OP online.",
-        "dica": "Esta e uma rota com parametro dinamico do Flask."
+        "mensagem": f"Welcome, {factory_name}! Online PO System.",
+        "dica": "This is a Flask dynamic parameter route."
     })
 
 
@@ -256,6 +266,6 @@ def boas_vindas(nome_fabrica):
 if __name__ == '__main__':
     # Boot DB before server   
     init_db()
-    # debug=True restart the server automatically when the files are saved
-    # host='0.0.0.0' let the acess to another devices at the same network
+    # debug=True restarts the server automatically when files are saved
+    # host='0.0.0.0' allows access from other devices on the same network
     app.run(debug=True, host='0.0.0.0', port=5000)
