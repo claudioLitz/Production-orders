@@ -1,52 +1,441 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Manufatura</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Production orders system</title>
+  
+  <style>
+    /* ── Reset and base ─────────────────────────────────── */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f4f8;
+      color: #263238;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ─────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #1F3864, #00897B);
+      color: white;
+      padding: 1.2rem 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .header-content {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    /* ── Badge of stats by API ─────────────────────────── */
+    #status-badge {
+      font-size: 0.8rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.4);
+    }
+
+    #status-badge.online {
+      background: #00897B;
+      border-color: #00897B;
+    }
+
+    #status-badge.offline {
+      background: #B71C1C;
+      border-color: #B71C1C;
+    }
+
+    /* ── Main Layout ──────────────────────────────── */
+    main {
+      max-width: 1100px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* ── Cards ──────────────────────────────────────────── */
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      color: #00897B;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #E0F2F1;
+    }
+
+    /* ── Forms ─────────────────────────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 700px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #546E7A;
+    }
+
+    input, select {
+      padding: 0.55rem 0.8rem;
+      border: 1.5px solid #CFD8DC;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: #00897B;
+    }
+
+    /* ── Buttons ─────────────────────────────────────────── */
+    button {
+      padding: 0.6rem 1.4rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+      opacity: 0.88;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    #btn-cadastrar {
+      background: #00897B;
+      color: white;
+    }
+
+    .btn-update {
+      background: #E0F2F1;
+      color: #00897B;
+      font-size: 0.85rem;
+    }
+
+    .btn-delete {
+      background: #FFEBEE;
+      color: #C62828;
+      font-size: 0.8rem;
+      padding: 4px 10px;
+    }
+
+    /* ── Feedback message ───────────────────────────── */
+    .message {
+      margin-top: 0.8rem;
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .message.success {
+      background: #E8F5E9;
+      color: #2E7D32;
+      border-left: 4px solid #2E7D32;
+    }
+
+    .message.error {
+      background: #FFEBEE;
+      color: #C62828;
+      border-left: 4px solid #C62828;
+    }
+
+    .hidden, .oculto {
+      display: none;
+    }
+
+    /* ── Table ─────────────────────────────────────────── */
+    .listagem-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .container-table {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: #263238;
+      color: white;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #ECEFF1;
+    }
+
+    tr:hover td {
+      background: #F5F5F5;
+    }
+
+    /* ── Badges of the status ───────────────────────────────── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .badge-pending {
+      background: #FFF9C4;
+      color: #F57F17;
+    }
+
+    .badge-working {
+      background: #E3F2FD;
+      color: #0D47A1;
+    }
+
+    .badge-done {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    /* ── Select de status na tabela ────────────────────── */
+    .select-status {
+      padding: 3px 6px;
+      border: 1px solid #CFD8DC;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+
+    /* ── Loading ────────────────────────────────────────── */
+    #loading {
+      text-align: center;
+      padding: 1rem;
+      color: #00897B;
+      font-weight: 600;
+    }
+
+    #without-data {
+      text-align: center;
+      padding: 2rem;
+      color: #90A4AE;
+    }
+  </style>
 </head>
 <body>
-    <header class="navbar">
-        <div class="logo">
-            <span class="material-icons">factory</span>
-            <span>Painel de Manufatura</span>
+
+  <header>
+    <div class="header-content">
+      <h1>Production orders system</h1>
+      <span id="status-badge">Verificando...</span>
+    </div>
+  </header>
+
+  <main>
+    
+    <section class="card" id="register_section">
+      <h2>New order</h2>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="Product">Product</label>
+          <input type="text" id="product" placeholder="Ex: WEG W22">
         </div>
-        <div class="server-status">
-            <span id="status-indicator" class="indicator offline"></span>
-            <span id="status-text">A ligar...</span>
-            <small id="server-time"></small>
+        
+        <div class="form-group">
+          <label for="quantity">quantity</label>
+          <input type="number" id="quantity" placeholder="Ex: 100" min="1">
         </div>
-    </header>
+        
+        <div class="form-group">
+          <label for="status-novo">Initial stats</label>
+          <select id="status-novo">
+            <option value="Pending">Pending</option>
+            <option value="In working">In working</option>
+            <option value="Done">Done</option>
+          </select>
+        </div>
+      </div>
+      
+      <button id="btn-cadastrar" onclick="criarOrdem()">
+        Register order
+      </button>
+      
+      <div id="message" class="hidden message"></div>
+    </section>
 
-    <main class="container">
-        <section class="panel form-panel">
-            <h2><span class="material-icons">add_circle_outline</span> Nova Ordem de Produção</h2>
-            <form id="form-ordem">
-                <div class="input-group">
-                    <label for="produto">Nome do Produto</label>
-                    <input type="text" id="produto" placeholder="Ex: Motor Elétrico 5CV" required>
-                </div>
-                <div class="input-group">
-                    <label for="quantidade">Quantidade (un.)</label>
-                    <input type="number" id="quantidade" min="1" placeholder="Ex: 50" required>
-                </div>
-                <button type="submit" class="btn-submit">Criar Ordem</button>
-            </form>
-        </section>
+    <section class="card" id="list-section">
+      <div class="listagem-header">
+        <h2>Registered orders</h2>
+        <button onclick="carregarOrdens()" class="btn-update">
+          Update list
+        </button>
+      </div>
+      
+      <div id="loading" class="oculto">Loading...</div>
+      
+      <div class="container-table">
+        <table id="orders-tabela">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Produto</th>
+              <th>Qtd</th>
+              <th>Status</th>
+              <th>Criado em</th>
+              <th>Acoes</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            </tbody>
+        </table>
+      </div>
+      
+      <p id="without-data" class="hidden">No order registered.</p>
+    </section>
+    
+  </main>
 
-        <section class="panel list-panel">
-            <div class="panel-header">
-                <h2><span class="material-icons">view_list</span> Ordens Registadas</h2>
-                <div class="total-badge">Total: <span id="total-ordens">0</span></div>
-            </div>
-            
-            <div class="grid-ordens" id="grid-ordens">
-                </div>
-        </section>
-    </main>
+  <script>
+    // URL base da API Flask
+    // Em produção, trocamos por: 'https://meuservidor.com.br'
+    const API_URL = 'http://localhost:5000';
+    // ────────────────────────────────────────────────────────
 
-    <script src="script.js"></script>
+    async function verificarStatus() {
+      const badge = document.getElementById('status-badge');
+      try {
+        const resp = await fetch(`${API_URL}/status`);
+        const dados = await resp.json();
+        badge.textContent = `API Online | ${dados.total_ordens} orders`;
+        badge.className = 'online';
+      } catch (erro) {
+        badge.textContent = 'API Offline';
+        badge.className = 'offline';
+      }
+    }
+
+    async function carregarOrdens() {
+      const loading = document.getElementById('loading');
+      const semDados = document.getElementById('without-data');
+      const tabela = document.getElementById('orders-tabela');
+      const corpo = document.getElementById('table-body');
+
+      // Exibe indicador de carregamento e esconde a tabela
+      loading.classList.remove('hidden');
+      tabela.classList.add('hidden');
+      semDados.classList.add('hidden');
+
+      try {
+        // Faz a requisicao GET /ordens
+        const resposta = await fetch(`${API_URL}/ordens`);
+        // Converte a resposta (texto JSON) em array JavaScript
+        const ordens = await resposta.json();
+
+        // Esconde o loading
+        loading.classList.add('hidden');
+
+        // Se nao ha ordens, mostra mensagem e sai da funcao
+        if (ordens.length === 0) {
+          semDados.classList.remove('hidden');
+          return;
+        }
+
+        // Para cada ordem, cria uma linha <tr> na tabela
+        corpo.innerHTML = ordens.map(ordem => `
+          <tr id="linha-${ordem.id}">
+            <td>${ordem.id}</td>
+            <td>${ordem.produto}</td>
+            <td>${ordem.quantidade}</td>
+            <td>${renderizarBadge(ordem.status)}</td>
+            <td>${ordem.criado_em}</td>
+            <td>
+              <select class="select-status" onchange="atualizarStatus(${ordem.id}, this.value)">
+                <option value="Pending" ${ordem.status === 'Pending' ? 'selected' : ''}>
+                  Pending
+                </option>
+                <option value="In working" ${ordem.status === 'In working' ? 'selected' : ''}>
+                  In working
+                </option>
+                <option value="Done" ${ordem.status === 'Done' ? 'selected' : ''}>
+                  Done
+                </option>
+              </select>
+              <button class="btn-delete" onclick="excluirOrdem(${ordem.id})">
+                Delete
+              </button>
+            </td>
+          </tr>
+        `).join('');
+
+        // Exibe a tabela preenchida
+        tabela.classList.remove('hidden');
+      } catch (erro) {
+        loading.classList.add('hidden');
+        console.error('Erro ao carregar ordens:', erro);
+        exibirMensagem('Error connecting to API. Is the server running?', 'error');
+      }
+    }
+
+    // Retorna o HTML do badge colorido conforme o status
+    function renderizarBadge(status) {
+      const classes = {
+        'Pending': 'badge badge-pending',
+        'In working': 'badge badge-working',
+        'Done': 'badge badge-done'
+      };
+      const cls = classes[status] || 'badge';
+      return `<span class="${cls}">${status}</span>`;
+    }
+  </script>
+
 </body>
 </html>
