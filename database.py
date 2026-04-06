@@ -1,3 +1,13 @@
+"""
+database.py – Módulo de persistência de dados.
+Gerencia a conexão com o banco de dados SQLite e a inicialização
+da estrutura de tabelas do Sistema de Ordens de Producao.
+Author: <seu nome>
+Date: 2026
+Version: 1.0.0
+SENAI Jaragua do Sul – Tecnico em Cibersistemas para Automacao WEG
+"""
+
 import sqlite3
 # Constante com o nome do arquivo de banco de dados.
 # O arquivo ordens.db será criado automaticamente na primeira execução.

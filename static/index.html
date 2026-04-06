@@ -348,6 +348,14 @@
     // Flask API Base URL
     // In production, change to: 'https://myserver.com'
     const API_URL = 'http://localhost:5000';
+    const API_KEY = 'senai-cibersistemas-2026-chave-segura';
+
+
+    const headersAutenticados = {
+      'Content-Type': 'application/json',
+      'X-API-Key': API_KEY
+    };
+
     // ────────────────────────────────────────────────────────
 
     async function checkStatus() {
@@ -438,6 +446,8 @@
     }
 
     async function createOrder() {
+
+      
       // Capture HTML field values
       const product = document.getElementById('product').value.trim();
       const quantity = document.getElementById('quantity').value;
@@ -462,9 +472,10 @@
 
       try {
         const response = await fetch(`${API_URL}/ordens`, {
+          
           method: 'POST',
           // Content-Type tells Flask the body is JSON
-          headers: { 'Content-Type': 'application/json' },
+          headers: headersAutenticados,
           // JSON.stringify converts JS object to JSON string
           body: JSON.stringify({
             produto: product,
@@ -538,8 +549,8 @@
       
       try {
         const response = await fetch(`${API_URL}/ordens/${id}`, {
-          method: 'DELETE'
-          // DELETE has no body
+          method: 'DELETE',
+          headers: { 'X-API-Key': API_KEY }
         });
         
         const data = await response.json();
